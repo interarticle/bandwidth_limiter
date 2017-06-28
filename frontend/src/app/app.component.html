@@ -1,0 +1,92 @@
+<md-toolbar color="primary">
+  <span>Bandwidth Limiter Visualization</span>
+</md-toolbar>
+
+<section>
+  <form class="parameters-form">
+    <div class="fields">
+      <md-input-container>
+        <input mdInput
+          name="prometheusHost"
+          type="text"
+          placeholder="Host name/port"
+          [(ngModel)]="prometheusHost">
+      </md-input-container>
+      <md-input-container>
+        <input mdInput
+          [mdDatepicker]="pickerStart"
+          name="startDate"
+          placeholder="Query Start Date"
+          [(ngModel)]="startDateString">
+          <button mdSuffix [mdDatepickerToggle]="pickerStart"></button>
+          <md-datepicker #pickerStart></md-datepicker>
+      </md-input-container>
+      <md-input-container>
+        <input mdInput
+          [mdDatepicker]="pickerEnd"
+          name="endDate"
+          placeholder="Query End Date"
+          [(ngModel)]="endDateString">
+          <button mdSuffix [mdDatepickerToggle]="pickerEnd"></button>
+          <md-datepicker #pickerEnd></md-datepicker>
+      </md-input-container>
+      <md-input-container>
+        <input mdInput
+          name="samplingInterval"
+          type="text"
+          placeholder="Sampling Interval"
+          [(ngModel)]="samplingInterval">
+      </md-input-container>
+      <md-input-container>
+        <input mdInput
+          name="tgrace"
+          type="number"
+          placeholder="Algorithm T_Grace"
+          [(ngModel)]="tgrace"
+          >
+      </md-input-container>
+    </div>
+    <div>
+      <button md-raised-button
+        color="primary"
+        (click)="onVisualize()"
+        [disabled]="busy">Visualize</button>
+    </div>
+  </form>
+</section>
+<section *ngIf="busy">
+  <md-progress-spinner color="primary" mode="indeterminate"></md-progress-spinner>
+</section>
+
+<section>
+  <md-card *ngIf="usageData && !busy">
+    <md-card-header>
+      Data Usage
+    </md-card-header>
+    <md-card-content>
+      <canvas
+        baseChart
+        [datasets]="usageData.data"
+        [labels]="usageData.labels"
+        [options]="usageChartOptions"
+        chartType="line"
+      ></canvas>
+    </md-card-content>
+  </md-card>
+</section>
+<section>
+  <md-card *ngIf="speedData && !busy">
+    <md-card-header>
+      Data Usage
+    </md-card-header>
+    <md-card-content>
+      <canvas
+        baseChart
+        [datasets]="speedData.data"
+        [labels]="speedData.labels"
+        [options]="speedChartOptions"
+        chartType="line"
+      ></canvas>
+    </md-card-content>
+  </md-card>
+</section>

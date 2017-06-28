@@ -1,0 +1,21 @@
+h1 {
+  color: #369;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 250%;
+}
+
+.parameters-form .fields {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.parameters-form .fields md-input-container {
+  flex-grow: 1;
+  margin-right: 20px;
+  min-width: 200px;
+  max-width: 400px;
+}
+
+section {
+  padding: 10px;
+}
