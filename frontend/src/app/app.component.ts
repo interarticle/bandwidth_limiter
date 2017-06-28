@@ -72,6 +72,11 @@ export class AppComponent {
       },
       elements: {line: {tension: 0}},
       responsive: true,
+      tooltips: {
+        callbacks: {
+          label: item => this.formatBytes(item.yLabel),
+        },
+      },
     };
     this.speedChartOptions = {
       scales: {
@@ -88,6 +93,11 @@ export class AppComponent {
       },
       elements: {line: {tension: 0}},
       responsive: true,
+      tooltips: {
+        callbacks: {
+          label: item => this.formatBytes(item.yLabel) + '/s',
+        },
+      },
     };
   }
 
