@@ -101,14 +101,14 @@ export class AppComponent {
     };
   }
 
-  toISODate(datetime: Date): string {
+  private toISODate(datetime: Date): string {
     return datetime.getFullYear() + '-' +
       padStart(datetime.getMonth() + 1, 2, '0') + '-' +
       padStart(datetime.getDate(), 2, '0');
   }
 
-  readonly units: string[] = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'EiB'];
-  formatBytes(bytes: number): string {
+  private readonly units: string[] = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'EiB'];
+  private formatBytes(bytes: number): string {
     let unit: string;
     for (unit of this.units) {
       if (bytes < 1000) {
@@ -119,7 +119,7 @@ export class AppComponent {
     return `${bytes.toFixed(2)} ${unit}`;
   }
 
-  async queryPrometheus(query: string, start: Date, end: Date, step: string = "1m"): Promise<PrometheusResponseData> {
+  private async queryPrometheus(query: string, start: Date, end: Date, step: string = "1m"): Promise<PrometheusResponseData> {
     let url = `http://${this.prometheusHost}/api/v1/query_range` +
       `?query=${encodeURIComponent(query)}` +
       `&start=${start.toISOString()}` +
@@ -133,7 +133,7 @@ export class AppComponent {
     return json.data;
   }
 
-  computeChartJsData(serieses: PrometheusSeries[], names: string[]=[]): ChartJsDataset {
+  private computeChartJsData(serieses: PrometheusSeries[], names: string[]=[]): ChartJsDataset {
     let chartData: ChartJsSeries[] = [];
     let labels = [];
     let index = 0;
@@ -159,10 +159,10 @@ export class AppComponent {
     };
   }
 
-  readonly bmax = 1e12;
-  readonly lmax = 4103250;
+  private readonly bmax = 1e12;
+  private readonly lmax = 4103250;
 
-  algoParams(date: Date): { tmax: number, t: number } {
+  private algoParams(date: Date): { tmax: number, t: number } {
     let somDate = new Date(date.getFullYear(), date.getMonth());
     let nsomDate = new Date(somDate);
     nsomDate.setMonth(nsomDate.getMonth() + 1);
@@ -173,13 +173,13 @@ export class AppComponent {
     };
   }
 
-  computeExpectedUsage(date: Date): number {
+  private computeExpectedUsage(date: Date): number {
     let params = this.algoParams(date);
     let movedData = this.lmax * this.tgrace - this.bmax * this.tgrace / params.tmax;
     return params.t / params.tmax * (this.bmax - movedData) + movedData;
   }
 
-  computeSpeedLimit(date: Date, usage: number): number {
+  private computeSpeedLimit(date: Date, usage: number): number {
     let params = this.algoParams(date);
     let m1l = (
       (this.bmax - this.lmax * this.tgrace
