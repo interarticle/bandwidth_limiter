@@ -51,6 +51,9 @@ export class AppComponent {
   startDateString: string;
   endDateString: string;
   tgrace = 3600;
+  // Number of bytes to move from the end of the month to the beginning of the
+  // month, in addition to those implied by tgrace.
+  bMovedEarly = 0;
 
   constructor (private http: Http) {
     this.endDateString = this.toISODate(new Date());
@@ -175,7 +178,7 @@ export class AppComponent {
 
   private computeExpectedUsage(date: Date): number {
     let params = this.algoParams(date);
-    let movedData = this.lmax * this.tgrace - this.bmax * this.tgrace / params.tmax;
+    let movedData = this.lmax * this.tgrace - this.bmax * this.tgrace / params.tmax + this.bMovedEarly;
     return params.t / params.tmax * (this.bmax - movedData) + movedData;
   }
 
@@ -183,10 +186,11 @@ export class AppComponent {
     let params = this.algoParams(date);
     let m1l = (
       (this.bmax - this.lmax * this.tgrace
-        + this.bmax * this.tgrace / params.tmax) *
-      (params.t + this.tgrace) / params.tmax +
-      this.lmax * this.tgrace - this.bmax * this.tgrace / params.tmax -
-      usage
+        + this.bmax * this.tgrace / params.tmax - this.bMovedEarly)
+      * (params.t + this.tgrace) / params.tmax
+      + this.lmax * this.tgrace - this.bmax * this.tgrace / params.tmax
+      + this.bMovedEarly
+      - usage
     ) / this.tgrace;
     let m2l = (this.bmax - usage) / (params.tmax - params.t);
     return min([max([m1l, m2l]), this.lmax]);
