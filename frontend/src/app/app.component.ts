@@ -22,7 +22,7 @@ interface PrometheusQueryResponse {
 }
 
 interface ChartJsSeries {
-  data: any[];
+  data: {x: number, y: number}[];
   label: string;
   pointRadius?: number;
   pointHitRadius?: number;
@@ -65,8 +65,8 @@ export class AppComponent {
         xAxes: [{
           type: 'linear',
           ticks: {
-            callback: ticks => {
-              var dt = new Date(ticks);
+            callback: millis => {
+              var dt = new Date(millis);
               return `${dt.getMonth()+1}/${dt.getDate()}`;
             },
           },
@@ -81,6 +81,7 @@ export class AppComponent {
       responsive: true,
       tooltips: {
         callbacks: {
+          title: items => new Date(items[0].xLabel).toString(),
           label: item => this.formatBytes(item.yLabel),
         },
       },
@@ -90,8 +91,8 @@ export class AppComponent {
         xAxes: [{
           type: 'linear',
           ticks: {
-            callback: ticks => {
-              var dt = new Date(ticks);
+            callback: millis => {
+              var dt = new Date(millis);
               return `${dt.getMonth()+1}/${dt.getDate()}`;
             },
           },
@@ -106,6 +107,7 @@ export class AppComponent {
       responsive: true,
       tooltips: {
         callbacks: {
+          title: items => new Date(items[0].xLabel).toString(),
           label: item => this.formatBytes(item.yLabel) + '/s',
         },
       },
@@ -150,7 +152,7 @@ export class AppComponent {
     for (let series of serieses) {
       let chartSeriesData = [];
       for (let pair of series.values) {
-        chartSeriesData.push({x: new Date(pair[0]* 1000), y: pair[1]});
+        chartSeriesData.push({x: pair[0] * 1000, y: pair[1]});
       }
       chartData.push({
         data: chartSeriesData,
