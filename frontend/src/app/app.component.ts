@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { Http } from '@angular/http';
-import { max, min, padStart } from 'lodash';
+import { max, min, padStart, map, concat } from 'lodash';
 import 'rxjs/add/operator/toPromise';
 
 interface PrometheusSeries {
   values: any[];
   metric: {
     __name__?: string;
+    since?: string;
   };
 }
 
@@ -29,7 +30,6 @@ interface ChartJsSeries {
 
 interface ChartJsDataset {
   data: ChartJsSeries[];
-  labels: any[];
 }
 
 @Component({
@@ -63,8 +63,12 @@ export class AppComponent {
     this.usageChartOptions = {
       scales: {
         xAxes: [{
+          type: 'linear',
           ticks: {
-            callback: dt => `${dt.getMonth()+1}/${dt.getDate()}`,
+            callback: ticks => {
+              var dt = new Date(ticks);
+              return `${dt.getMonth()+1}/${dt.getDate()}`;
+            },
           },
         }],
         yAxes: [{
@@ -84,8 +88,12 @@ export class AppComponent {
     this.speedChartOptions = {
       scales: {
         xAxes: [{
+          type: 'linear',
           ticks: {
-            callback: dt => `${dt.getMonth()+1}/${dt.getDate()}`,
+            callback: ticks => {
+              var dt = new Date(ticks);
+              return `${dt.getMonth()+1}/${dt.getDate()}`;
+            },
           },
         }],
         yAxes: [{
@@ -138,15 +146,11 @@ export class AppComponent {
 
   private computeChartJsData(serieses: PrometheusSeries[], names: string[]=[]): ChartJsDataset {
     let chartData: ChartJsSeries[] = [];
-    let labels = [];
     let index = 0;
     for (let series of serieses) {
       let chartSeriesData = [];
       for (let pair of series.values) {
-        chartSeriesData.push(pair[1]);
-        if (index == 0) {
-          labels.push(new Date(pair[0] * 1000));
-        }
+        chartSeriesData.push({x: new Date(pair[0]* 1000), y: pair[1]});
       }
       chartData.push({
         data: chartSeriesData,
@@ -158,7 +162,6 @@ export class AppComponent {
     }
     return {
       data: chartData,
-      labels: labels,
     };
   }
 
@@ -196,6 +199,28 @@ export class AppComponent {
     return min([max([m1l, m2l]), this.lmax]);
   }
 
+  // Removes data in serieses that do not match their "since" label,
+  // interpreted as the month during which the series is valid for.
+  private filterSeriesBySince(serieses: PrometheusSeries[]): PrometheusSeries[] {
+    let outSerieses: PrometheusSeries[] = [];
+    for (let series of serieses) {
+      let year = parseInt(series.metric.since.substring(0, 4));
+      let month = parseInt(series.metric.since.substring(5, 7));
+      let startTimestamp = (new Date(year, month - 1)).getTime() / 1000;
+      let endTimestamp = (new Date(year, month)).getTime() / 1000;
+      let outValues: any[] = [];
+      for (let value of series.values) {
+        if (!(value[0] >= startTimestamp && value[0] < endTimestamp)) continue;
+        outValues.push(value);
+      }
+      outSerieses.push({
+        metric: series.metric,
+        values: outValues,
+      });
+    }
+    return outSerieses;
+  }
+
   async onVisualize() {
     this.busy = true;
     this.usageData = null;
@@ -203,29 +228,45 @@ export class AppComponent {
     try {
       let totalBytesSeries =
         (await this.queryPrometheus('l4_total_bytes', new Date(this.startDateString), new Date(this.endDateString), this.samplingInterval)).result;
+      totalBytesSeries = this.filterSeriesBySince(totalBytesSeries);
       let speedSeries =
         (await this.queryPrometheus(`rate(l4_total_bytes[${this.samplingInterval}])`, new Date(this.startDateString), new Date(this.endDateString), this.samplingInterval)).result;
+      speedSeries = this.filterSeriesBySince(speedSeries);
 
-      let usageLimitPairs = [];
-      for (let pair of totalBytesSeries[0].values) {
-        usageLimitPairs.push([pair[0], this.computeExpectedUsage(new Date(pair[0]*1000))]);
+      let numSeries = totalBytesSeries.length;
+      let seriesMonths = map(totalBytesSeries, "metric.since");
+
+      for (let i = 0; i < numSeries; i++) {
+        let usageLimitPairs = [];
+        for (let pair of totalBytesSeries[i].values) {
+          usageLimitPairs.push([pair[0], this.computeExpectedUsage(new Date(pair[0]*1000))]);
+        }
+        totalBytesSeries.push({
+          metric: {},
+          values: usageLimitPairs,
+        });
       }
-      totalBytesSeries.push({
-        metric: {},
-        values: usageLimitPairs,
-      });
 
-      let speedLimitPairs = [];
-      for (let pair of totalBytesSeries[0].values) {
-        speedLimitPairs.push([pair[0], this.computeSpeedLimit(new Date(pair[0]*1000), parseFloat(pair[1]))]);
+
+      for (let i = 0; i < numSeries; i++) {
+        let speedLimitPairs = [];
+        for (let pair of totalBytesSeries[i].values) {
+          speedLimitPairs.push([pair[0], this.computeSpeedLimit(new Date(pair[0]*1000), parseFloat(pair[1]))]);
+        }
+        speedSeries.push({
+          metric: {},
+          values: speedLimitPairs,
+        });
       }
-      speedSeries.push({
-        metric: {},
-        values: speedLimitPairs,
-      });
 
-      this.usageData = this.computeChartJsData(totalBytesSeries, ["Usage", "Usage Limit"]);
-      this.speedData = this.computeChartJsData(speedSeries, ["Used Speed", "Speed Limit"]);
+      this.usageData = this.computeChartJsData(
+        totalBytesSeries,
+        concat(map(seriesMonths, month => `${month} Usage`),
+          map(seriesMonths, month => `${month} Usage Limit`)));
+      this.speedData = this.computeChartJsData(
+        speedSeries,
+        concat(map(seriesMonths, month => `${month} Speed`),
+          map(seriesMonths, month => `${month} Speed Limit`)));
     } catch (exc) {
       alert(exc);
     } finally {
