@@ -116,8 +116,8 @@ export class AppComponent {
 
   private toISODate(datetime: Date): string {
     return datetime.getFullYear() + '-' +
-      padStart(datetime.getMonth() + 1, 2, '0') + '-' +
-      padStart(datetime.getDate(), 2, '0');
+      padStart((datetime.getMonth() + 1).toString(), 2, '0') + '-' +
+      padStart(datetime.getDate().toString(), 2, '0');
   }
 
   private readonly units: string[] = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'EiB'];
@@ -236,7 +236,7 @@ export class AppComponent {
       speedSeries = this.filterSeriesBySince(speedSeries);
 
       let numSeries = totalBytesSeries.length;
-      let seriesMonths = map(totalBytesSeries, "metric.since");
+      let seriesMonths = map(totalBytesSeries, series => series.metric.since);
 
       for (let i = 0; i < numSeries; i++) {
         let usageLimitPairs = [];
