@@ -203,7 +203,8 @@ export class AppComponent {
 
   // Removes data in serieses that do not match their "since" label,
   // interpreted as the month during which the series is valid for.
-  private filterSeriesBySince(serieses: PrometheusSeries[]): PrometheusSeries[] {
+  // Series that become empty after filtering are removed entirely.
+  private filterPrometheusSeries(serieses: PrometheusSeries[]): PrometheusSeries[] {
     let outSerieses: PrometheusSeries[] = [];
     for (let series of serieses) {
       let year = parseInt(series.metric.since.substring(0, 4));
@@ -215,6 +216,7 @@ export class AppComponent {
         if (!(value[0] >= startTimestamp && value[0] < endTimestamp)) continue;
         outValues.push(value);
       }
+      if (outValues.length == 0) continue;
       outSerieses.push({
         metric: series.metric,
         values: outValues,
@@ -230,10 +232,10 @@ export class AppComponent {
     try {
       let totalBytesSeries =
         (await this.queryPrometheus('l4_total_bytes', new Date(this.startDateString), new Date(this.endDateString), this.samplingInterval)).result;
-      totalBytesSeries = this.filterSeriesBySince(totalBytesSeries);
+      totalBytesSeries = this.filterPrometheusSeries(totalBytesSeries);
       let speedSeries =
         (await this.queryPrometheus(`rate(l4_total_bytes[${this.samplingInterval}])`, new Date(this.startDateString), new Date(this.endDateString), this.samplingInterval)).result;
-      speedSeries = this.filterSeriesBySince(speedSeries);
+      speedSeries = this.filterPrometheusSeries(speedSeries);
 
       let numSeries = totalBytesSeries.length;
       let seriesMonths = map(totalBytesSeries, series => series.metric.since);
