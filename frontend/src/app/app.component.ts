@@ -47,7 +47,7 @@ export class AppComponent {
   readonly speedChartOptions;
 
   prometheusHost = '192.168.0.254:9090';
-  samplingInterval = '6h';
+  samplingInterval = '10m';
   startDateString: string;
   endDateString: string;
   tgrace = 3600;
@@ -56,7 +56,7 @@ export class AppComponent {
   bMovedEarly = 0;
 
   constructor (private http: Http) {
-    this.endDateString = this.toISODate(new Date());
+    this.endDateString = this.toISODate(new Date((new Date()).getTime() + 24 * 60 * 60 * 1000));
     this.startDateString = this.toISODate(
       new Date((new Date()).getTime() - 30*24*60*60*1000));
 
@@ -231,10 +231,10 @@ export class AppComponent {
     this.speedData = null;
     try {
       let totalBytesSeries =
-        (await this.queryPrometheus('l4_total_bytes', new Date(this.startDateString), new Date(this.endDateString), this.samplingInterval)).result;
+        (await this.queryPrometheus('l2_total_bytes', new Date(this.startDateString), new Date(this.endDateString), this.samplingInterval)).result;
       totalBytesSeries = this.filterPrometheusSeries(totalBytesSeries);
       let speedSeries =
-        (await this.queryPrometheus(`rate(l4_total_bytes[${this.samplingInterval}])`, new Date(this.startDateString), new Date(this.endDateString), this.samplingInterval)).result;
+        (await this.queryPrometheus(`rate(l2_total_bytes[${this.samplingInterval}])`, new Date(this.startDateString), new Date(this.endDateString), this.samplingInterval)).result;
       speedSeries = this.filterPrometheusSeries(speedSeries);
 
       let numSeries = totalBytesSeries.length;
